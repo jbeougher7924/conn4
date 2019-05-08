@@ -4,6 +4,10 @@ rows = 6
 board_size = cols * rows
 board_phase_count = 0
 
+game_loop = False
+current_player = 1
+player_move = None
+
 token_used_cols_np = np.full(shape=cols, fill_value=(rows - 1), dtype=int)
 
 board_list_np = np.zeros(shape=(board_size, cols, rows), dtype=int)
@@ -72,17 +76,26 @@ def checkWin(board_phase, player):
             if spot1 == player and spot2 == player and spot3 == player and spot4 == player:
                 return True
     return False
+
+
 if __name__ == "__main__":
 
-    # print(board_list_np[0, 2, 2])
-    tempCols = 3;
-    # token_used_cols_np[tempCols] = 3
-    while not place_token(board_phase_count, tempCols, 2):
-        print(token_used_cols_np)
-        tempCols = np.random.randint(7)
+    while not game_loop:
+        player_move = int(input("Player: {} Enter number 1 to 7 \n".format(current_player))) - 1
 
-    print(checkWin(board_phase_count, 0))
-    print(checkWin(board_phase_count, 1))
+        while not place_token(board_phase_count, player_move, current_player):
+            print_board()
+            print("This column is full choose another column")
+            player_move = int(input("Player: {} Enter number 1 to 7 \n".format(current_player))) - 1
 
+        game_loop = checkWin(board_phase_count, current_player)
+        if not game_loop:
+            print_board(board_phase_count)
+            if current_player == 1:
+                current_player = 2
+            else:
+                current_player = 1
+        else:
+            print("Game Over Player {} Won".format(current_player))
 
     print_board(board_phase_count)
