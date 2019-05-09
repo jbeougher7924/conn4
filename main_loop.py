@@ -1,4 +1,5 @@
 import numpy as np
+import math
 cols = 7
 rows = 6
 board_size = cols * rows
@@ -79,7 +80,6 @@ def checkWin(board_phase, player):
 
 
 if __name__ == "__main__":
-
     while not game_loop:
         player_move = int(input("Player: {} Enter number 1 to 7 \n".format(current_player))) - 1
 
