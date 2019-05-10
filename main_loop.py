@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import random
 cols = 7
 rows = 6
 board_size = cols * rows
@@ -40,7 +41,7 @@ def print_tokensUsed():
 
 
 def checkWin(board_phase, player):
-
+    print("Turn: {}".format(board_phase))
     for col in range(cols - 3):
         for row in range(3, rows):
             spot1 = board_list_np[board_phase, col, row ]
@@ -79,23 +80,110 @@ def checkWin(board_phase, player):
     return False
 
 
-if __name__ == "__main__":
-    while not game_loop:
-        player_move = int(input("Player: {} Enter number 1 to 7 \n".format(current_player))) - 1
+def human_turn(player):
 
-        while not place_token(board_phase_count, player_move, current_player):
-            print_board()
-            print("This column is full choose another column")
-            player_move = int(input("Player: {} Enter number 1 to 7 \n".format(current_player))) - 1
+    human_move = int(input("Player: {} Enter number 1 to 7 \n".format(player))) - 1
 
-        game_loop = checkWin(board_phase_count, current_player)
-        if not game_loop:
-            print_board(board_phase_count)
-            if current_player == 1:
-                current_player = 2
-            else:
-                current_player = 1
+    while not place_token(board_phase_count, human_move, player):
+        print_board(board_phase_count)
+        print("This column is full choose another column")
+        human_move = int(input("Player: {} Enter number 1 to 7 \n".format(player))) - 1
+
+
+
+def is_valid_location(board, col):
+    return board[rows - 1][col] == 0
+
+def get_valid_locations(board):
+    valid_locations = []
+    for col in range(cols):
+        if is_valid_location(board, col):
+            valid_locations.append(col)
+    return valid_locations
+
+def minimax(board, depth, alpha, beta, maximizingPlayer):
+    valid_locations = get_valid_locations(board)
+    is_terminal = is_terminal_node(board)
+    if depth == 0 or is_terminal:
+        if is_terminal:
+            if winning_move(board, AI_PIECE):
+                return (None, 100000000000000)
+            elif winning_move(board, PLAYER_PIECE):
+                return (None, -10000000000000)
+            else:  # Game is over, no more valid moves
+                return (None, 0)
+        else:  # Depth is zero
+            return (None, score_position(board, AI_PIECE))
+    if maximizingPlayer:
+        value = -math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = board.copy()
+            drop_piece(b_copy, row, col, AI_PIECE)
+            new_score = minimax(b_copy, depth - 1, alpha, beta, False)[1]
+            if new_score > value:
+                value = new_score
+                column = col
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return column, value
+
+    else:  # Minimizing player
+        value = math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = board.copy()
+            drop_piece(b_copy, row, col, PLAYER_PIECE)
+            new_score = minimax(b_copy, depth - 1, alpha, beta, True)[1]
+            if new_score < value:
+                value = new_score
+                column = col
+            beta = min(beta, value)
+            if alpha >= beta:
+                break
+        return column, value
+
+
+def ai_turn():
+    pass
+
+
+def switch_player(player, game_status):
+    if not game_status:
+        print_board(board_phase_count)
+
+        if player == 1:
+            player = 2
         else:
-            print("Game Over Player {} Won".format(current_player))
+            player = 1
+    else:
+        print("Game Over Player {} Won".format(player))
+    return player
+
+
+if __name__ == "__main__":
+
+    ai_players = False  # bool(int(input("Enter One or Zero for number of AI players.\n")))
+    current_player = np.random.randint(1, 3)
+    if ai_players:
+        while not game_loop:
+            if current_player == 1:
+                human_turn(current_player)
+            else:
+                human_turn(current_player)
+
+            game_loop = checkWin(board_phase_count, current_player)
+            current_player = switch_player(current_player, game_loop)
+            board_phase_count += 1
+
+    else:
+        while not game_loop:
+            human_turn(current_player)
+            game_loop = checkWin(board_phase_count, current_player)
+            current_player = switch_player(current_player, game_loop)
+            board_phase_count += 1
 
     print_board(board_phase_count)
