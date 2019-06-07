@@ -3,6 +3,11 @@ import random
 import pygame
 import sys
 import math
+import time
+import tensorflow as tf
+from pathlib import Path
+import os
+
 
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
@@ -21,6 +26,44 @@ AI_PIECE = 2
 
 WINDOW_LENGTH = 4
 
+# Varibles
+game_rows = rows = ROW_COUNT
+game_cols = cols = COLUMN_COUNT
+winning_length = 3
+boardSize = rows * cols
+actions = rows * cols
+won_games = 0
+lost_games = 0
+draw_games = 0
+layer_1_w = 750
+layer_2_w = 750
+layer_3_w = 750
+
+
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev = 0.01)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.01, shape = shape)
+    return tf.Variable(initial)
+
+# greedy policy for selecting an action
+# the higher the value of e the higher the probability of an action being random.
+epsilon = 1.0
+
+# Discount factor -- determines the importance of future rewards
+GAMMA = 0.9
+
+
+# swaps X's to O's and vice versa
+def InverseBoard(board):
+    temp_board = np.copy(board)
+    rows, cols = temp_board.shape
+    for r in range(rows):
+        for c in range(cols):
+            temp_board[r,c] *= -1
+    return temp_board.reshape([-1])
 
 def create_board():
     board = np.zeros((ROW_COUNT, COLUMN_COUNT))
