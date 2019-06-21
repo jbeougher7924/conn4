@@ -1,8 +1,8 @@
-# A Python Program to implement Machine Learning for the Game Tic Tac Toe (3x3) using Reinforcement Learning (Q learning technique) and tensorflow. 
-# 
-#   Note: mistakes were made, especially spelling mistakes.
-#   
+# A Python Program to implement Machine Learning for the Game Connect 4 (6x7) using Reinforcement Learning (Q learning technique) and tensorflow.
 #
+#   Note: mistakes were made, especially spelling mistakes.
+#
+#  Code used from https://github.com/jamesq9/Tic-Tac-Toe-Machine-Learning-Using-Reinforcement-Learning
 
 
 # imports
@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 import sys
 
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Varibles
 
@@ -35,11 +35,12 @@ layer_3_w = 750
 
 
 def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev = 0.01)
+    initial = tf.truncated_normal(shape, stddev=0.01)
     return tf.Variable(initial)
 
+
 def bias_variable(shape):
-    initial = tf.constant(0.01, shape = shape)
+    initial = tf.constant(0.01, shape=shape)
     return tf.Variable(initial)
 
 
@@ -57,8 +58,9 @@ def InverseBoard(board):
     rows, cols = temp_board.shape
     for r in range(rows):
         for c in range(cols):
-            temp_board[r,c] *= -1
+            temp_board[r, c] *= -1
     return temp_board.reshape([-1])
+
 
 # returns true if the game is completed for a given board
 
@@ -94,9 +96,6 @@ def isGameOver(board, piece):
     return False
 
 
-
-
-
 # creates the network
 def createNetwork():
     # network weights and biases
@@ -111,32 +110,32 @@ def createNetwork():
     b_layer3 = bias_variable([layer_3_w])
 
     o_layer = weight_variable([layer_3_w, actions])
-    o_bais  = bias_variable([actions])
+    o_bais = bias_variable([actions])
 
     # input Layer
     x = tf.placeholder("float", [None, boardSize])
 
     # hidden layers
-    h_layer1 = tf.nn.relu(tf.matmul(x,W_layer1) + b_layer1)
-    h_layer2 = tf.nn.relu(tf.matmul(h_layer1,W_layer2) + b_layer2)
-    h_layer3 = tf.nn.relu(tf.matmul(h_layer2,W_layer3) + b_layer3)
+    h_layer1 = tf.nn.relu(tf.matmul(x, W_layer1) + b_layer1)
+    h_layer2 = tf.nn.relu(tf.matmul(h_layer1, W_layer2) + b_layer2)
+    h_layer3 = tf.nn.relu(tf.matmul(h_layer2, W_layer3) + b_layer3)
 
     # output layer
-    y = tf.matmul(h_layer3,o_layer) + o_bais
+    y = tf.matmul(h_layer3, o_layer) + o_bais
     prediction = tf.argmax(y[0])
 
-    return x,y, prediction
+    return x, y, prediction
 
 
 def trainNetwork():
     print()
 
     # create network
-    inputState , Qoutputs, prediction = createNetwork()
+    inputState, Qoutputs, prediction = createNetwork()
 
     # calculate the loss
-    targetQOutputs = tf.placeholder("float",[None,actions])
-    loss =  tf.reduce_mean(tf.square(tf.subtract(targetQOutputs, Qoutputs)))
+    targetQOutputs = tf.placeholder("float", [None, actions])
+    loss = tf.reduce_mean(tf.square(tf.subtract(targetQOutputs, Qoutputs)))
 
     # train the model to minimise the loss
     train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
@@ -154,7 +153,7 @@ def trainNetwork():
 
     checkpoint = tf.train.get_checkpoint_state("model")
     if checkpoint and checkpoint.model_checkpoint_path:
-        s = saver.restore(sess,checkpoint.model_checkpoint_path)
+        s = saver.restore(sess, checkpoint.model_checkpoint_path)
         print("Successfully loaded the model:", checkpoint.model_checkpoint_path)
         step = int(os.path.basename(checkpoint.model_checkpoint_path).split('-')[1])
     else:
@@ -167,18 +166,18 @@ def trainNetwork():
     tot_matches = 60000
     number_of_matches_each_episode = 500
     max_iterations = tot_matches / number_of_matches_each_episode
-    
+
     # defines the rate at which epsilon should decrease
     e_downrate = 0.9 / max_iterations
 
-    print("e down rate is ",e_downrate)
+    print("e down rate is ", e_downrate)
 
     # initalise e with inital epsilon value here.
     e = epsilon
 
     print("max iteration = {}".format(max_iterations))
     print()
-    
+
     run_time = 0
     while "ticky" != "tacky":
         sys.stdout.flush()
@@ -195,9 +194,8 @@ def trainNetwork():
         GamesList = []
 
         for i in range(episodes):
-            completeGame, victory = playaGame(e,sess,inputState, prediction,Qoutputs)
+            completeGame, victory = playaGame(e, sess, inputState, prediction, Qoutputs)
             GamesList.append(completeGame)
-            
 
         for k in range(epchos):
             random.shuffle(GamesList)
@@ -216,35 +214,37 @@ def trainNetwork():
                     if loop_in == 0:
                         game_reward = reward
                     else:
-                        #obtain q values for next sate using the network
-                        nextQ = sess.run(Qoutputs,feed_dict={inputState:[nextState]})
+                        # obtain q values for next sate using the network
+                        nextQ = sess.run(Qoutputs, feed_dict={inputState: [nextState]})
                         maxNextQ = np.max(nextQ)
-                        game_reward = GAMMA * ( maxNextQ )
+                        game_reward = GAMMA * (maxNextQ)
 
-                    
-                    targetQ = sess.run(Qoutputs,feed_dict={inputState:[currentState]})
+                    targetQ = sess.run(Qoutputs, feed_dict={inputState: [currentState]})
 
                     # once we calculate the reward to the paticular action, we must also add the -1 reward for all the illegal moves in the q value
                     # one might say this is cheating , but it speeds up the process.
-                    for index,item in enumerate(currentState):
+                    for index, item in enumerate(currentState):
                         if item != 0:
-                            targetQ[0,index] = -1
+                            targetQ[0, index] = -1
 
-                    targetQ[0,action] = game_reward
+                    targetQ[0, action] = game_reward
 
                     loop_in += 1
                     t_loss = 0
-                    #Train our network using the targetQ
+                    # Train our network using the targetQ
 
-                    
-                    t_loss=sess.run([train_step,Qoutputs,loss],feed_dict={inputState:[currentState], targetQOutputs:targetQ})
+                    t_loss = sess.run([train_step, Qoutputs, loss],
+                                      feed_dict={inputState: [currentState], targetQOutputs: targetQ})
                     total_loss += t_loss[2]
 
         iterations += 1
-        time_diff = time.time()-start_time
+        time_diff = time.time() - start_time
         run_time += time_diff
-        print("iteration {} completed with {} wins, {} losses {} draws, out of {} games played, e is {} \ncost is {} , current_time is {}, time taken is {} , total time = {} hours \n".format(iterations,
-        won_games,lost_games,draw_games,episodes,e*100,total_loss,time.ctime(),time_diff,(run_time)/3600))
+        print(
+            "iteration {} completed with {} wins, {} losses {} draws, out of {} games played, e is {} \ncost is {} , current_time is {}, time taken is {} , total time = {} hours \n".format(
+                iterations,
+                won_games, lost_games, draw_games, episodes, e * 100, total_loss, time.ctime(), time_diff,
+                (run_time) / 3600))
         start_time = time.time()
         total_loss = 0
         won_games = 0
@@ -255,10 +255,11 @@ def trainNetwork():
         if e > -0.2:
             e -= e_downrate
         else:
-             e = random.choice([0.1,0.05,0.06,0.07,0.15,0.03,0.20,0.25,0.5,0.4])
+            e = random.choice([0.1, 0.05, 0.06, 0.07, 0.15, 0.03, 0.20, 0.25, 0.5, 0.4])
 
-        #print(wins,loss,(episodes-wins-loss))
-        saver.save(sess, "./model/model.ckpt",global_step=iterations)
+        # print(wins,loss,(episodes-wins-loss))
+        saver.save(sess, "./model/model.ckpt", global_step=iterations)
+
 
 def checkAction(action, myList):
     print(myList)
@@ -268,7 +269,7 @@ def checkAction(action, myList):
 
 
 # plays a game and returns a list with all states, actions and final reward.
-def playaGame(e,sess,inputState, prediction, Qoutputs):
+def playaGame(e, sess, inputState, prediction, Qoutputs):
     global won_games
     global lost_games
     global draw_games
@@ -280,21 +281,22 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
     ## create the entire game memory object that contains the memories for the game
     ## and an empty board
     completeGameMemory = []
-    myList = np.array([0]*(rows*cols)).reshape(rows,cols)
+    myList = np.array([0] * (rows * cols)).reshape(rows, cols)
 
     ## randomly chose a turn 1 is ours -1 is oppnents
-    turn = random.choice([1,-1])
+    turn = random.choice([1, -1])
 
     ## if opponents turn let him play and set the inital state
-    if(turn == -1):
-        initial_index = random.choice(range(5))
-        best_index, _= sess.run([prediction,Qoutputs], feed_dict={inputState : [np.array(np.copy(myList).reshape(-1))]})
-        initial_index = random.choice([best_index,initial_index,best_index])
-        myList[int(initial_index/rows),initial_index%cols] = -1
+    if (turn == -1):
+        initial_index = random.choice(range(42))
+        best_index, _ = sess.run([prediction, Qoutputs],
+                                 feed_dict={inputState: [np.array(np.copy(myList).reshape(-1))]})
+        initial_index = random.choice([best_index, initial_index, best_index])
+        myList[int(initial_index / cols), initial_index % cols] = -1
         turn = turn * -1
 
     ## while the game is not over repat, our move then opponents move
-    while(True):
+    while (True):
 
         ## create a memory which will hold the current inital state, the action thats taken, the reward the was recieved, the next state
         memory = []
@@ -304,7 +306,7 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
 
         ## fetch all the indexes that are free or zero so those can used for playing next move
         zero_indexes = []
-        for index,item in enumerate(temp_copy):
+        for index, item in enumerate(temp_copy):
             if item == 0:
                 zero_indexes.append(index)
 
@@ -319,7 +321,7 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
         selectedRandomIndex = random.choice(zero_indexes)
 
         ## calculate the prediction from the network which can be later used as an action with some probability
-        pred, _ = sess.run([prediction,Qoutputs], feed_dict={inputState : [temp_copy]})
+        pred, _ = sess.run([prediction, Qoutputs], feed_dict={inputState: [temp_copy]})
 
         ## since the netowrk can be messy and inacurate check if the prediction is correct first.
         isFalsePrediction = False if temp_copy[pred] == 0 else True
@@ -328,13 +330,13 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
         memory.append(np.copy(myList).reshape(-1))
 
         ## Lets pick an action with some probability, exploration and exploitation
-        if random.random() > e: #and isFalsePrediction == False: #expliotation
+        if random.random() > e:  # and isFalsePrediction == False: #expliotation
             action = pred
-        else: # exploration, explore with valid moves to save time.
-            random_action = random.choice(range(5))
+        else:  # exploration, explore with valid moves to save time.
+            random_action = random.choice(range(42))
             action = selectedRandomIndex
-            #action = random.choice([selectedRandomIndex,random_action])
-            #action = random.choice(range(9))
+            # action = random.choice([selectedRandomIndex,random_action])
+            # action = random.choice(range(9))
 
         ## lets add the action to the memory
         memory.append([action])
@@ -345,16 +347,12 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
             memory.append([reward])
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
-            lost_games +=1
+            lost_games += 1
             break
         # checkAction(action, myList)
 
-        if int(action/rows ) > 5:
-            action = 30
-
-
         ## update the board with the action taken
-        myList[int(action/rows),action%cols] = 1
+        myList[int(action / cols), action % cols] = 1
 
         ## now calcualte the reward.
         reward = 0
@@ -365,19 +363,17 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
             memory.append([reward])
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
-            lost_games +=1
+            lost_games += 1
             break
 
         ## if after playing our move the game is completed then yay we deserve a reward and its the final state
-        if(isGameOver(myList, 1)):
+        if (isGameOver(myList, 1)):
             reward = win_reward
             memory.append([reward])
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
-            won_games +=1
+            won_games += 1
             break
-
-
 
         # Now lets make a move for the opponent
 
@@ -386,7 +382,7 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
         temp_copy_inverse = np.array(np.copy(InverseBoard(myList)).reshape(-1))
         temp_copy = np.array(np.copy(myList).reshape(-1))
         zero_indexes = []
-        for index,item in enumerate(temp_copy):
+        for index, item in enumerate(temp_copy):
             if item == 0:
                 zero_indexes.append(index)
 
@@ -396,47 +392,45 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
             memory.append([reward])
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
-            draw_games+=1
+            draw_games += 1
             break
 
         ## almost same as before
         selectedRandomIndex = random.choice(zero_indexes)
-        pred, _ = sess.run([prediction,Qoutputs], feed_dict={inputState : [temp_copy_inverse]})
+        pred, _ = sess.run([prediction, Qoutputs], feed_dict={inputState: [temp_copy_inverse]})
         isFalsePrediction = False if temp_copy[pred] == 0 else True
 
         ## we want opponet to play good sometimes and play bad sometimes so 33.33% ish probability
         action = None
 
-        if(isFalsePrediction == True):
+        if (isFalsePrediction == True):
             action = random.choice([selectedRandomIndex])
         else:
-            action = random.choice([selectedRandomIndex,pred,pred,pred,pred])
-            #action = random.choice([selectedRandomIndex,pred])
+            action = random.choice([selectedRandomIndex, pred, pred, pred, pred])
+            # action = random.choice([selectedRandomIndex,pred])
         # if e < 0.4 and isFalsePrediction == False:
         #     action = pred
 
         # testing
         temp_copy2 = np.copy(myList).reshape(-1)
         if temp_copy2[action] != 0:
-            print("big time error here ",temp_copy2 , action)
+            print("big time error here ", temp_copy2, action)
             return
         # checkAction(action, myList)
 
-        if int(action/rows ) > 5:
-            action = 30
 
 
         ## update the board with opponents move
-        myList[int(action/rows ),action%cols] = -1
+        myList[int(action / cols), action % cols] = -1
 
         ## if after opponents move the game is done meaning opponent won, boo..
         if isGameOver(myList, -1) == True:
             reward = loss_reward
             memory.append([reward])
-            #final state
+            # final state
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
-            lost_games +=1
+            lost_games += 1
             break
 
         ## if no one won and game isn't done yet then lets continue the game
@@ -447,7 +441,7 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
         completeGameMemory.append(memory)
 
     # return the complete game memory and the last set reward
-    return completeGameMemory,reward
+    return completeGameMemory, reward
 
 
 # not used.
@@ -461,13 +455,12 @@ class Logger(object):
         self.log.write(message)
 
     def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
+        # this flush method is needed for python 3 compatibility.
+        # this handles the flush command by doing nothing.
+        # you might want to specify some extra behavior here.
         pass
 
 
-
 if __name__ == "__main__":
-    #sys.stdout = Logger()
+    # sys.stdout = Logger()
     trainNetwork()
