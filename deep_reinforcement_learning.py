@@ -16,9 +16,13 @@ import sys
 
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-# Varibles 
-game_rows = rows = 3
-game_cols = cols = 3
+# Varibles
+
+ROW_COUNT = 6
+COLUMN_COUNT = 7
+
+game_rows = rows = ROW_COUNT
+game_cols = cols = COLUMN_COUNT
 winning_length = 3
 boardSize = rows * cols
 actions = rows * cols
@@ -57,81 +61,40 @@ def InverseBoard(board):
     return temp_board.reshape([-1])
 
 # returns true if the game is completed for a given board
-def isGameOver(board):
-    temp = None
-    rows , cols = board.shape
 
-    ## ROWS
-    for i in range(rows):
-        temp = getRowSum(board, i)
-        if checkValue(temp):
-            return True
-    ## COLS
-    for i in range(cols):
-        temp = getColSum(board, i)
-        if checkValue(temp):
-            return True
+def isGameOver(board, piece):
+    # Check horizontal locations for win
+    for c in range(COLUMN_COUNT - 3):
+        for r in range(ROW_COUNT):
+            if board[r][c] == piece and board[r][c + 1] == piece and board[r][c + 2] == piece and board[r][
+                c + 3] == piece:
+                return True
 
-    ## Diagonals
-    temp = getRightDig(board)
-    if checkValue(temp):
-        return True
+    # Check vertical locations for win
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT - 3):
+            if board[r][c] == piece and board[r + 1][c] == piece and board[r + 2][c] == piece and board[r + 3][
+                c] == piece:
+                return True
 
-    temp = getLeftDig(board)
-    if checkValue(temp):
-        return True
+    # Check positively sloped diaganols
+    for c in range(COLUMN_COUNT - 3):
+        for r in range(ROW_COUNT - 3):
+            if board[r][c] == piece and board[r + 1][c + 1] == piece and board[r + 2][c + 2] == piece and board[r + 3][
+                c + 3] == piece:
+                return True
 
-    # ## Does not contain empty places
-    # empty_place_exist = False
-    # for r in range(rows):
-    #     for c in range(cols):
-    #         if(board[r,c] == 0):
-    #             empty_place_exist = True
-    # if not empty_place_exist:
-    #     return True
+    # Check negatively sloped diaganols
+    for c in range(COLUMN_COUNT - 3):
+        for r in range(3, ROW_COUNT):
+            if board[r][c] == piece and board[r - 1][c + 1] == piece and board[r - 2][c + 2] == piece and board[r - 3][
+                c + 3] == piece:
+                return True
 
     return False
 
-## support function
-def getRowSum(board , r):
-    rows , cols = board.shape
-    sum = 0
-    for c in range(cols):
-        sum = sum + board[r,c]
-    return sum
 
-## support function
-def getColSum(board , c):
-    rows , cols = board.shape
-    sum = 0
-    for r in range(rows):
-        sum = sum + board[r,c]
-    return sum
 
-## support function
-def getLeftDig(board):
-    rows , cols = board.shape
-    sum = 0
-    for i in range(rows):
-        sum = sum + board[i,i]
-    return sum
-
-## support function
-def getRightDig(board):
-    rows , cols = board.shape
-    sum = 0
-    i = rows - 1
-    j = 0
-    while i >= 0:
-        sum += board[i,j]
-        i = i - 1
-        j = j + 1
-    return sum
-
-## support function
-def checkValue(sum):
-    if sum == -3 or sum == 3:
-        return True
 
 
 # creates the network
@@ -297,7 +260,11 @@ def trainNetwork():
         #print(wins,loss,(episodes-wins-loss))
         saver.save(sess, "./model/model.ckpt",global_step=iterations)
 
-
+def checkAction(action, myList):
+    print(myList)
+    print(action)
+    print(int(action / 3))
+    print(action % 3)
 
 
 # plays a game and returns a list with all states, actions and final reward.
@@ -313,17 +280,17 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
     ## create the entire game memory object that contains the memories for the game
     ## and an empty board
     completeGameMemory = []
-    myList = np.array([0]*(rows*cols)).reshape(3,3)
+    myList = np.array([0]*(rows*cols)).reshape(rows,cols)
 
     ## randomly chose a turn 1 is ours -1 is oppnents
     turn = random.choice([1,-1])
 
     ## if opponents turn let him play and set the inital state
     if(turn == -1):
-        initial_index = random.choice(range(9))
+        initial_index = random.choice(range(5))
         best_index, _= sess.run([prediction,Qoutputs], feed_dict={inputState : [np.array(np.copy(myList).reshape(-1))]})
         initial_index = random.choice([best_index,initial_index,best_index])
-        myList[int(initial_index/3),initial_index%3] = -1
+        myList[int(initial_index/rows),initial_index%cols] = -1
         turn = turn * -1
 
     ## while the game is not over repat, our move then opponents move
@@ -364,7 +331,7 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
         if random.random() > e: #and isFalsePrediction == False: #expliotation
             action = pred
         else: # exploration, explore with valid moves to save time.
-            random_action = random.choice(range(9))
+            random_action = random.choice(range(5))
             action = selectedRandomIndex
             #action = random.choice([selectedRandomIndex,random_action])
             #action = random.choice(range(9))
@@ -380,9 +347,14 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
             completeGameMemory.append(memory)
             lost_games +=1
             break
+        # checkAction(action, myList)
+
+        if int(action/rows ) > 5:
+            action = 30
+
 
         ## update the board with the action taken
-        myList[int(action/game_rows),action%game_cols] = 1
+        myList[int(action/rows),action%cols] = 1
 
         ## now calcualte the reward.
         reward = 0
@@ -397,7 +369,7 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
             break
 
         ## if after playing our move the game is completed then yay we deserve a reward and its the final state
-        if(isGameOver(myList)):
+        if(isGameOver(myList, 1)):
             reward = win_reward
             memory.append([reward])
             memory.append(np.copy(myList.reshape(-1)))
@@ -448,12 +420,17 @@ def playaGame(e,sess,inputState, prediction, Qoutputs):
         if temp_copy2[action] != 0:
             print("big time error here ",temp_copy2 , action)
             return
+        # checkAction(action, myList)
+
+        if int(action/rows ) > 5:
+            action = 30
+
 
         ## update the board with opponents move
-        myList[int(action/game_rows),action%game_cols] = -1
+        myList[int(action/rows ),action%cols] = -1
 
         ## if after opponents move the game is done meaning opponent won, boo..
-        if isGameOver(myList) == True:
+        if isGameOver(myList, -1) == True:
             reward = loss_reward
             memory.append([reward])
             #final state
