@@ -261,11 +261,27 @@ def trainNetwork():
         saver.save(sess, "./model/model.ckpt", global_step=iterations)
 
 
-def checkAction(action, myList):
-    print(myList)
-    print(action)
-    print(int(action / 3))
-    print(action % 3)
+def check_action(myList):
+    one_above_all = False
+
+    for row in myList:
+        # print(row)
+        first_one = False
+        for i in range(6, -1, -1):
+
+            if first_one:
+                if row[i] == 0:
+                    one_above_all = True
+                    return one_above_all
+
+            if row[i] != 0:
+                first_one = True
+
+        # print(one_above_all)
+        # print(row)
+
+    return one_above_all
+
 
 
 # plays a game and returns a list with all states, actions and final reward.
@@ -349,7 +365,15 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             completeGameMemory.append(memory)
             lost_games += 1
             break
-        # checkAction(action, myList)
+
+        ## chose an action that places a value above a zero
+        if check_action(myList):
+            reward = loss_reward
+            memory.append([reward])
+            memory.append(np.copy(myList.reshape(-1)))
+            completeGameMemory.append(memory)
+            lost_games += 1
+            break
 
         ## update the board with the action taken
         myList[int(action / cols), action % cols] = 1
@@ -416,7 +440,14 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
         if temp_copy2[action] != 0:
             print("big time error here ", temp_copy2, action)
             return
-        # checkAction(action, myList)
+
+        if check_action(myList):
+            reward = loss_reward
+            memory.append([reward])
+            memory.append(np.copy(myList.reshape(-1)))
+            completeGameMemory.append(memory)
+            lost_games += 1
+            break
 
 
 
