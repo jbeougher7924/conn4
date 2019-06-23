@@ -4,9 +4,6 @@
 #
 #  Code used from https://github.com/jamesq9/Tic-Tac-Toe-Machine-Learning-Using-Reinforcement-Learning
 
-# Note this model attempts to learn that you can not place a 1, -1 above a 0 ater 9500 iterations it could not
-#   consistently do this.
-
 
 # imports
 import time
@@ -165,7 +162,7 @@ def trainNetwork():
 
     print(time.ctime())
 
-    # define maximum number of matches for inital interation
+    ## define maximum number of matches for inital interation
     tot_matches = 60000
     number_of_matches_each_episode = 500
     max_iterations = tot_matches / number_of_matches_each_episode
@@ -224,8 +221,8 @@ def trainNetwork():
 
                     targetQ = sess.run(Qoutputs, feed_dict={inputState: [currentState]})
 
-                    # once we calculate the reward to the paticular action, we must also add the -1 reward for all the
-                    # illegal moves in the q value one might say this is cheating , but it speeds up the process.
+                    # once we calculate the reward to the paticular action, we must also add the -1 reward for all the illegal moves in the q value
+                    # one might say this is cheating , but it speeds up the process.
                     for index, item in enumerate(currentState):
                         if item != 0:
                             targetQ[0, index] = -1
@@ -291,6 +288,23 @@ def check_action(myList):
 
     return one_above_all
 
+def top_zero2(myList):
+    # create a copy of the board which is linear
+    # fetch all the indexes that are free or zero so those can used for playing next move
+    zero_indexes = []
+    for index, row in enumerate(myList):
+        # print(index)
+        lowestZero = -1
+        for i in range(6, -1, -1):
+            if row[i] == 0:
+                lowestZero = i
+            else:
+                break
+        if lowestZero != -1:
+            zero_indexes.append(index * 7 + lowestZero)
+
+    return zero_indexes
+
 
 
 # plays a game and returns a list with all states, actions and final reward.
@@ -326,14 +340,12 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
         ## create a memory which will hold the current inital state, the action thats taken, the reward the was recieved, the next state
         memory = []
 
-        ## create a copy of the board which is linear
-        temp_copy = np.array(np.copy(myList).reshape(-1))
 
         ## fetch all the indexes that are free or zero so those can used for playing next move
-        zero_indexes = []
-        for index, item in enumerate(temp_copy):
-            if item == 0:
-                zero_indexes.append(index)
+
+        temp_copy = np.array(np.copy(myList).reshape(-1))
+        temp_zero = np.array(np.copy(myList))
+        zero_indexes = top_zero2(temp_zero)
 
         ## if no index is found which is free to place a move exit as the game completed with slight reward. better to draw then to lose right ?
         if len(zero_indexes) == 0:
@@ -390,7 +402,7 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
         ## now calcualte the reward.
         reward = 0
 
-        ## if we choose an action thats invalid, boo we get no reward and opponent wins
+        # if we choose an action thats invalid, boo we get no reward and opponent wins
         if isFalsePrediction == True and action == pred:
             reward = loss_reward
             memory.append([reward])
@@ -399,13 +411,14 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             lost_games += 1
             break
 
-        ## if after playing our move the game is completed then yay we deserve a reward and its the final state
+        # if after playing our move the game is completed then yay we deserve a reward and its the final state
         if (isGameOver(myList, 1)):
             reward = win_reward
             memory.append([reward])
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
             won_games += 1
+            print(myList)
             break
 
         # Now lets make a move for the opponent
@@ -414,10 +427,9 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
         ## to calculate the prediction
         temp_copy_inverse = np.array(np.copy(InverseBoard(myList)).reshape(-1))
         temp_copy = np.array(np.copy(myList).reshape(-1))
-        zero_indexes = []
-        for index, item in enumerate(temp_copy):
-            if item == 0:
-                zero_indexes.append(index)
+        temp_zero = np.array(np.copy(myList))
+        ## fetch all the indexes that are free or zero so those can used for playing next move
+        zero_indexes = top_zero2(temp_zero)
 
         ## if opponent has no moves left that means that the last move was the final move and its a draw so some reward
         if len(zero_indexes) == 0:
@@ -448,6 +460,8 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
         temp_copy2 = np.copy(myList).reshape(-1)
         if temp_copy2[action] != 0:
             print("big time error here ", temp_copy2, action)
+            print(zero_indexes)
+            print(myList)
             return
 
         if check_action(myList):
@@ -458,12 +472,10 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             lost_games += 1
             break
 
-
-
-        ## update the board with opponents move
+        # update the board with opponents move
         myList[int(action / cols), action % cols] = -1
 
-        ## if after opponents move the game is done meaning opponent won, boo..
+        # if after opponents move the game is done meaning opponent won, boo..
         if isGameOver(myList, -1) == True:
             reward = loss_reward
             memory.append([reward])
@@ -473,11 +485,11 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             lost_games += 1
             break
 
-        ## if no one won and game isn't done yet then lets continue the game
+        # if no one won and game isn't done yet then lets continue the game
         memory.append([0])
         memory.append(np.copy(myList.reshape(-1)))
 
-        ## lets add this move to the complete game memory
+        # lets add this move to the complete game memory
         completeGameMemory.append(memory)
 
     # return the complete game memory and the last set reward
