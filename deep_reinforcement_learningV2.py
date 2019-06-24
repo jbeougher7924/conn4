@@ -270,41 +270,33 @@ def trainNetwork():
 def check_action(myList):
     one_above_all = False
 
-    for row in myList:
-        # print(row)
-        first_one = False
-        for i in range(6, -1, -1):
+    for i in range(cols):
 
-            if first_one:
-                if row[i] == 0:
-                    one_above_all = True
-                    return one_above_all
-
-            if row[i] != 0:
-                first_one = True
+        first_zero = False
+        for j in range(rows):
+            if myList[j, i] != 0:
+                if first_zero:
+                    if myList[j, i] != 0:
+                        one_above_all = True
+            else:
+                first_zero = True
 
         # print(one_above_all)
-        # print(row)
+        # one_above_all = False
 
     return one_above_all
 
+
 def top_zero2(myList):
-    # create a copy of the board which is linear
     # fetch all the indexes that are free or zero so those can used for playing next move
     zero_indexes = []
-    for index, row in enumerate(myList):
-        # print(index)
-        lowestZero = -1
-        for i in range(6, -1, -1):
-            if row[i] == 0:
-                lowestZero = i
-            else:
+    for i in range(cols):
+        for j in range(rows):
+            if myList[j, i] == 0:
+                zero_indexes.append(j * 7 + i)
                 break
-        if lowestZero != -1:
-            zero_indexes.append(index * 7 + lowestZero)
 
     return zero_indexes
-
 
 
 # plays a game and returns a list with all states, actions and final reward.
@@ -418,7 +410,8 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
             won_games += 1
-            print(myList)
+            # print(myList)
+            # print("\n")
             break
 
         # Now lets make a move for the opponent
