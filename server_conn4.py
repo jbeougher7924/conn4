@@ -61,6 +61,7 @@ def  bestmove(input):
 
 
 def print_board():
+    label = -1
     for row in range(rows):
         col0 = board_list_np[row, 0]
         col1 = board_list_np[row, 1]
@@ -69,7 +70,8 @@ def print_board():
         col4 = board_list_np[row, 4]
         col5 = board_list_np[row, 5]
         col6 = board_list_np[row, 6]
-        print("{} {} {} {} {} {} {}".format(col0, col1, col2, col3, col4, col5, col6))
+        label += 7
+        print("{} {} {} {} {} {} {} {}".format(col0, col1, col2, col3, col4, col5, col6, label))
 
 
 def print_tokensUsed():
@@ -85,10 +87,19 @@ def print_tokensUsed():
 #     else:
 #         return False
 
+# def place_token(column, player):
+#     if token_used_cols_np[column] >= 0:
+#         board_list_np[column, token_used_cols_np[column]] = player
+#         token_used_cols_np[column] -= 1
+#         return True
+#     else:
+#         return False
+
 def place_token(column, player):
-    if token_used_cols_np[column] >= 0:
-        board_list_np[column, token_used_cols_np[column]] = player
-        token_used_cols_np[column] -= 1
+    if token_used_cols_np[column] <= 6:
+        print("row: {} col: {}".format( token_used_cols_np[column], column))
+        board_list_np[token_used_cols_np[column], column] = player
+        token_used_cols_np[column] += 1
         return True
     else:
         return False
@@ -104,10 +115,14 @@ if __name__ == '__main__':
 
     player = int(input("1 or -1"))
     # player = 1
+    place_maker = 0
     while True:
 
         print_board()
+
+
         place_maker = int(input("drop token player: {}".format(player)))
+
         place_token(place_maker,player)
         if player == 1:
             player = -1
