@@ -13,6 +13,8 @@ import numpy as np
 from pathlib import Path
 import os
 import sys
+import connect4def as c4
+import math
 
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -20,6 +22,7 @@ import sys
 
 ROW_COUNT = 6
 COLUMN_COUNT = 7
+AI_PIECE = -1
 
 game_rows = rows = ROW_COUNT
 game_cols = cols = COLUMN_COUNT
@@ -164,7 +167,7 @@ def trainNetwork():
 
     ## define maximum number of matches for inital interation
     tot_matches = 60000
-    number_of_matches_each_episode = 500
+    number_of_matches_each_episode = 100
     max_iterations = tot_matches / number_of_matches_each_episode
 
     # defines the rate at which epsilon should decrease
@@ -325,7 +328,8 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
         initial_index = random.choice([best_index, initial_index, best_index])
         myList[int(initial_index / cols), initial_index % cols] = -1
         turn = turn * -1
-
+    # print(
+    #     "completed with {} wins, {} losses {} draws".format(won_games, lost_games, draw_games))
     ## while the game is not over repat, our move then opponents move
     while (True):
 
@@ -433,40 +437,14 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             draw_games += 1
             break
 
-        ## almost same as before
-        selectedRandomIndex = random.choice(zero_indexes)
-        pred, _ = sess.run([prediction, Qoutputs], feed_dict={inputState: [temp_copy_inverse]})
-        isFalsePrediction = False if temp_copy[pred] == 0 else True
+        col, minimax_score = c4.minimax(myList, 5, -math.inf, math.inf, True)
 
-        ## we want opponet to play good sometimes and play bad sometimes so 33.33% ish probability
-        action = None
-
-        if (isFalsePrediction == True):
-            action = random.choice([selectedRandomIndex])
-        else:
-            action = random.choice([selectedRandomIndex, pred, pred, pred, pred])
-            # action = random.choice([selectedRandomIndex,pred])
-        # if e < 0.4 and isFalsePrediction == False:
-        #     action = pred
-
-        # testing
-        temp_copy2 = np.copy(myList).reshape(-1)
-        if temp_copy2[action] != 0:
-            print("big time error here ", temp_copy2, action)
-            print(zero_indexes)
-            print(myList)
-            return
-
-        if check_action(myList):
-            reward = loss_reward
-            memory.append([reward])
-            memory.append(np.copy(myList.reshape(-1)))
-            completeGameMemory.append(memory)
-            lost_games += 1
-            break
+        if c4.is_valid_location(myList, col):
+            # pygame.time.wait(500)
+            row = c4.get_next_open_row(myList, col)
 
         # update the board with opponents move
-        myList[int(action / cols), action % cols] = -1
+        myList[row, col] = -1
 
         # if after opponents move the game is done meaning opponent won, boo..
         if isGameOver(myList, -1) == True:
@@ -476,6 +454,7 @@ def playaGame(e, sess, inputState, prediction, Qoutputs):
             memory.append(np.copy(myList.reshape(-1)))
             completeGameMemory.append(memory)
             lost_games += 1
+
             break
 
         # if no one won and game isn't done yet then lets continue the game

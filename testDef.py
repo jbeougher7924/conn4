@@ -1,5 +1,5 @@
 import numpy as np
-
+import testImport as tI
 
 ROW_COUNT = 6
 COLUMN_COUNT = 7
@@ -126,12 +126,18 @@ def top_zero2(myList):
 # check_action(myList)
 
 
-print(mod_list(myList))
-print(check_action(myList))
-
-
-# zero_indexes = top_zero(myList)
-zero_indexes2 = top_zero2(myList)
+# print(mod_list(myList))
+# print(check_action(myList))
 #
-# print(zero_indexes)
-print(zero_indexes2)
+#
+# # zero_indexes = top_zero(myList)
+# zero_indexes2 = top_zero2(myList)
+# #
+# # print(zero_indexes)
+# print(zero_indexes2)
+
+
+
+
+tI.mod_list(myList)
+tI.print_board(myList)

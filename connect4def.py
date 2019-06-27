@@ -3,15 +3,6 @@ import random
 import pygame
 import sys
 import math
-import time
-import tensorflow as tf
-from pathlib import Path
-import os
-import tables
-
-filename = "data\\array.txt"
-
-f = open(filename, mode='w')
 
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
@@ -26,48 +17,10 @@ AI = 1
 
 EMPTY = 0
 PLAYER_PIECE = 1
-AI_PIECE = 2
+AI_PIECE = -1
 
 WINDOW_LENGTH = 4
 
-# Varibles
-game_rows = rows = ROW_COUNT
-game_cols = cols = COLUMN_COUNT
-winning_length = 3
-boardSize = rows * cols
-actions = rows * cols
-won_games = 0
-lost_games = 0
-draw_games = 0
-layer_1_w = 750
-layer_2_w = 750
-layer_3_w = 750
-
-
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev = 0.01)
-    return tf.Variable(initial)
-
-def bias_variable(shape):
-    initial = tf.constant(0.01, shape = shape)
-    return tf.Variable(initial)
-
-# greedy policy for selecting an action
-# the higher the value of e the higher the probability of an action being random.
-epsilon = 1.0
-
-# Discount factor -- determines the importance of future rewards
-GAMMA = 0.9
-
-
-# swaps X's to O's and vice versa
-def InverseBoard(board):
-    temp_board = np.copy(board)
-    rows, cols = temp_board.shape
-    for r in range(rows):
-        for c in range(cols):
-            temp_board[r,c] *= -1
-    return temp_board.reshape([-1])
 
 def create_board():
     board = np.zeros((ROW_COUNT, COLUMN_COUNT))
@@ -149,8 +102,6 @@ def score_position(board, piece):
     center_count = center_array.count(piece)
     score += center_count * 3
 
-
-
     ## Score Horizontal
     for r in range(ROW_COUNT):
         row_array = [int(i) for i in list(board[r, :])]
@@ -168,12 +119,12 @@ def score_position(board, piece):
     ## Score posiive sloped diagonal
     for r in range(ROW_COUNT - 3):
         for c in range(COLUMN_COUNT - 3):
-            window = [board[r + i, c + i] for i in range(WINDOW_LENGTH)]
+            window = [board[r + i][c + i] for i in range(WINDOW_LENGTH)]
             score += evaluate_window(window, piece)
 
     for r in range(ROW_COUNT - 3):
         for c in range(COLUMN_COUNT - 3):
-            window = [board[r + 3 - i, c + i] for i in range(WINDOW_LENGTH)]
+            window = [board[r + 3 - i][c + i] for i in range(WINDOW_LENGTH)]
             score += evaluate_window(window, piece)
 
     return score
@@ -202,8 +153,6 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
         for col in valid_locations:
             row = get_next_open_row(board, col)
             b_copy = board.copy()
-            # print(b_copy)
-            np.savetxt(f, b_copy, fmt="%s")
             drop_piece(b_copy, row, col, AI_PIECE)
             new_score = minimax(b_copy, depth - 1, alpha, beta, False)[1]
             if new_score > value:
@@ -255,117 +204,3 @@ def pick_best_move(board, piece):
     return best_col
 
 
-# def draw_board(board):
-#     for c in range(COLUMN_COUNT):
-#         for r in range(ROW_COUNT):
-#             pygame.draw.rect(screen, BLUE, (c * SQUARESIZE, r * SQUARESIZE + SQUARESIZE, SQUARESIZE, SQUARESIZE))
-#             pygame.draw.circle(screen, BLACK, (
-#             int(c * SQUARESIZE + SQUARESIZE / 2), int(r * SQUARESIZE + SQUARESIZE + SQUARESIZE / 2)), RADIUS)
-#
-#     for c in range(COLUMN_COUNT):
-#         for r in range(ROW_COUNT):
-#             if board[r][c] == PLAYER_PIECE:
-#                 pygame.draw.circle(screen, RED, (
-#                 int(c * SQUARESIZE + SQUARESIZE / 2), height - int(r * SQUARESIZE + SQUARESIZE / 2)), RADIUS)
-#             elif board[r][c] == AI_PIECE:
-#                 pygame.draw.circle(screen, YELLOW, (
-#                 int(c * SQUARESIZE + SQUARESIZE / 2), height - int(r * SQUARESIZE + SQUARESIZE / 2)), RADIUS)
-#     pygame.display.update()
-
-def run_game():
-    board = create_board()
-    # print_board(board)
-    game_over = False
-
-    pygame.init()
-
-    SQUARESIZE = 100
-
-    width = COLUMN_COUNT * SQUARESIZE
-    height = (ROW_COUNT + 1) * SQUARESIZE
-
-    size = (width, height)
-
-    RADIUS = int(SQUARESIZE / 2 - 5)
-
-    # screen = pygame.display.set_mode(size)
-    # draw_board(board)
-    # pygame.display.update()
-    #
-    # myfont = pygame.font.SysFont("monospace", 75)
-
-    turn = random.randint(PLAYER, AI)
-    print("Went first {}".format(turn +1))
-    # turn = PLAYER
-    game_winner = 0
-
-    while not game_over:
-
-        # # Ask for Player 2 Input
-        if turn == PLAYER and not game_over:
-
-            # col = random.randint(0, COLUMN_COUNT-1)
-            # col = pick_best_move(board, PLAYER_PIECE)
-            f.write("Player: {} turn\n\n\n\n".format(turn))
-            col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
-
-            if is_valid_location(board, col):
-                # pygame.time.wait(500)
-                row = get_next_open_row(board, col)
-                drop_piece(board, row, col, PLAYER_PIECE)
-
-                if winning_move(board, PLAYER_PIECE):
-                    # label = myfont.render("Player 1 wins!!", 1, RED)
-                    print("Player 1 wins")
-                    # screen.blit(label, (40, 10))
-                    game_winner = 1
-                    game_over = True
-
-                # print_board(board)
-                # draw_board(board)
-
-                turn += 1
-                turn = turn % 2
-
-        # # Ask for Player 2 Input
-        if turn == AI and not game_over:
-
-            # col = random.randint(0, COLUMN_COUNT-1)
-            # col = pick_best_move(board, AI_PIECE)
-            f.write("Player: {} turn\n\n\n\n".format(turn))
-
-            col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
-
-            if is_valid_location(board, col):
-                # pygame.time.wait(500)
-                row = get_next_open_row(board, col)
-                drop_piece(board, row, col, AI_PIECE)
-
-                if winning_move(board, AI_PIECE):
-                    # label = myfont.render("Player 2 wins!!", 1, YELLOW)
-                    print("Player 2 wins")
-                    # screen.blit(label, (40, 10))
-                    game_winner = 2
-                    game_over = True
-
-
-                # print_board(board)
-                # draw_board(board)
-
-                turn += 1
-                turn = turn % 2
-
-        if game_over:
-            # pygame.time.wait(3000)
-            return game_winner, board
-
-wins = [0,0]
-
-for i in range(1):
-    g_win, board = run_game()
-    wins[g_win - 1] += 1
-    print_board(board)
-
-print(wins)
-print("Done")
-f.close()
